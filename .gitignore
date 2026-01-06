@@ -1,0 +1,52 @@
+# ----------------------------
+# Build directories (CMake)
+# ----------------------------
+build/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# ----------------------------
+# Compiled binaries
+# ----------------------------
+*.o
+*.obj
+*.so
+*.dll
+*.exe
+*.out
+
+# ----------------------------
+# Python artifacts
+# ----------------------------
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+
+# ----------------------------
+# Docker
+# ----------------------------
+*.tar
+*.tar.gz
+docker-compose.override.yml
+*.log
+
+# ----------------------------
+# OS / Editor files
+# ----------------------------
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# ----------------------------
+# Logs / temporary files
+# ----------------------------
+*.log
+*.tmp
+*.temp
