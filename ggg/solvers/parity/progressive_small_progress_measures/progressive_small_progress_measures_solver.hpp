@@ -1,0 +1,150 @@
+#pragma once
+
+#include "libggg/graphs/parity_graph.hpp"
+#include "libggg/solvers/solver.hpp"
+#include <queue>
+#include <string>
+#include <vector>
+
+namespace ggg {
+namespace solvers {
+
+/**
+ * @brief Progressive Small Progress Measures parity game solver
+ *
+ * Implements Jurdziński's PSPM algorithm with polynomial time complexity.
+ * @complexity: Time: O(d * m * n^(d/2)), Space: O(n * d),
+ * where d is max priority, m is number of edges, n is number of vertices.
+ *
+ * The algorithm maintains progress measures for each vertex and both players,
+ * iteratively lifting these measures until convergence. The final measures
+ * determine winning regions and optimal strategies.
+ */
+class ProgressiveSmallProgressMeasuresSolver : public Solver<graphs::ParityGraph, RSSolution<graphs::ParityGraph>> {
+  public:
+    /**
+     * @brief Construct the PSPM solver
+     */
+    ProgressiveSmallProgressMeasuresSolver() = default;
+
+    /**
+     * @brief Solve the given parity game and return winning regions with strategies
+     *
+     * Executes the full PSPM algorithm: initializes progress measures, performs iterative
+     * lifting with work queue processing, applies periodic global updates, and extracts
+     * the final solution from converged measures.
+     *
+     * @param graph The parity graph to solve
+     * @return RSSolution containing winning regions and optimal strategies for both players
+     */
+    RSSolution<graphs::ParityGraph> solve(const graphs::ParityGraph &graph) override;
+
+    /**
+     * @brief Get solver name for identification
+     * @return Human-readable solver description
+     */
+    std::string get_name() const override {
+        return "Progressive Small Progress Measures";
+    }
+
+  private:
+    // Algorithm state
+    const graphs::ParityGraph *pv; ///< Pointer to the game being solved (const, not modified)
+    int k;                         ///< Number of priorities plus one (algorithm parameter)
+    std::vector<int> pms;          ///< Progress measures: k values per vertex
+    std::vector<int> strategy;     ///< Strategy function for each vertex
+    std::vector<int> counts;       ///< Count of vertices at each priority level
+    std::vector<int> tmp;          ///< Temporary storage for progress measure operations
+    std::vector<int> best;         ///< Best progress measure found during comparisons
+    std::vector<int> dirty;        ///< Dirty flags for work queue management
+    std::vector<int> unstable;     ///< Instability flags for global updates
+    std::queue<int> todo;          ///< Work queue for iterative processing
+    int64_t lift_count;            ///< Count of successful lift operations
+    int64_t lift_attempt;          ///< Count of attempted lift operations
+
+    /**
+     * @brief Initialize algorithm data structures for the given game
+     * @param game The parity graph to solve
+     */
+    void init(const graphs::ParityGraph &game);
+
+    /**
+     * @brief Compare two progress measures lexicographically
+     * @param a First progress measure array
+     * @param b Second progress measure array
+     * @param d Maximum priority to consider
+     * @param pl Player whose measures to compare
+     * @return true if a < b in lexicographic order for player pl
+     */
+    bool pm_less(int *a, int *b, int d, int pl);
+
+    /**
+     * @brief Copy progress measure values for a specific player
+     * @param dst Destination progress measure array
+     * @param src Source progress measure array
+     * @param pl Player whose priorities to copy
+     */
+    void pm_copy(int *dst, int *src, int pl);
+
+    /**
+     * @brief Compute progress operation (increment with carry)
+     * @param dst Destination progress measure array
+     * @param src Source progress measure array
+     * @param d Priority level at which progress occurs
+     * @param pl Player for whom to compute progress
+     */
+    void prog(int *dst, int *src, int d, int pl);
+
+    /**
+     * @brief Check if a node's progress measure can be improved for a given player
+     * @param node Node index to check
+     * @param pl Player whose measure to check
+     * @return true if the measure can be lifted
+     */
+    bool canlift(int node, int pl);
+
+    /**
+     * @brief Attempt to lift (improve) the progress measure at a given node
+     * @param node Node index to lift
+     * @param target Specific target node to consider (-1 for all successors)
+     * @return true if any progress measure was improved
+     */
+    bool lift(int node, int target);
+
+    /**
+     * @brief Global update phase for a specific player
+     * @param pl Player for whom to perform the update
+     */
+    void update(int pl);
+
+    /**
+     * @brief Add a node to the work queue if not already present
+     * @param node Node index to add
+     */
+    void todo_push(int node);
+
+    /**
+     * @brief Remove and return the next node from the work queue
+     * @return Node index from front of queue
+     */
+    int todo_pop();
+
+    /**
+     * @brief Convert vertex handle to internal node index
+     * @param game The parity graph
+     * @param vertex Vertex handle to convert
+     * @return Zero-based node index
+     */
+    int vertex_to_node(const graphs::ParityGraph &game, graphs::ParityVertex vertex);
+
+    /**
+     * @brief Convert internal node index to vertex handle
+     * @param game The parity graph
+     * @param node Zero-based node index
+     * @return Vertex handle
+     */
+    graphs::ParityVertex node_to_vertex(const graphs::ParityGraph &game, int node);
+};
+
+} // namespace solvers
+} // namespace ggg
